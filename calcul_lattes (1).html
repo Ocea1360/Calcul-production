@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1f3a5f">
+<title>Calcul Production Lattes</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 16px;
+    background: #e3e3e3;
+    font-family: Arial, Helvetica, sans-serif;
+    display: flex;
+    justify-content: center;
+  }
+  .container {
+    width: 100%;
+    max-width: 460px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 20px;
+    color: #333;
+    margin: 4px 0 20px 0;
+  }
+  .row {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .label-box {
+    flex: 1.5;
+    background: #fdf3cf;
+    border: 2px solid #1f3a5f;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    font-size: 15px;
+    color: #222;
+  }
+  .value-box {
+    flex: 1;
+    background: #dbeaf7;
+    border: 2px solid #1f3a5f;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 6px;
+    min-width: 0;
+  }
+  .value-box input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    text-align: center;
+    font-size: 16px;
+    color: #0b2e4f;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  .value-box input::-webkit-outer-spin-button,
+  .value-box input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .value-box.result {
+    font-weight: bold;
+    font-size: 16px;
+    color: #0b2e4f;
+  }
+  .unit {
+    font-size: 12px;
+    color: #555;
+    margin-left: 4px;
+  }
+  .error-msg {
+    text-align: center;
+    color: #b00020;
+    font-size: 13px;
+    margin: -6px 0 14px 0;
+    min-height: 16px;
+  }
+  button {
+    width: 100%;
+    padding: 14px;
+    margin-top: 10px;
+    background: #1f3a5f;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+  }
+  button:active { background: #16283f; }
+  .reset-btn {
+    background: #8a8a8a;
+    margin-top: 8px;
+  }
+  .reset-btn:active { background: #6f6f6f; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Calcul de production - Lattes</h1>
+
+  <div class="row">
+    <div class="label-box">Vitesse (m/min) :</div>
+    <div class="value-box"><input type="number" id="vitesse" inputmode="decimal" placeholder="0"></div>
+  </div>
+
+  <div class="row">
+    <div class="label-box">Longueur (mm) :</div>
+    <div class="value-box"><input type="number" id="longueur" inputmode="decimal" placeholder="0"></div>
+  </div>
+
+  <div class="row">
+    <div class="label-box">Nombre Total de lattes :</div>
+    <div class="value-box"><input type="number" id="totalLattes" inputmode="numeric" placeholder="0"></div>
+  </div>
+
+  <div class="row">
+    <div class="label-box">Nombre de lattes finies :</div>
+    <div class="value-box"><input type="number" id="lattesFinies" inputmode="numeric" placeholder="0"></div>
+  </div>
+
+  <div class="row">
+    <div class="label-box">Temps de prod total :</div>
+    <div class="value-box result" id="tempsProdTotal">--h --min</div>
+  </div>
+
+  <div class="row">
+    <div class="label-box">Temps restant :</div>
+    <div class="value-box result" id="tempsRestant">--h --min</div>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <button onclick="calculer()">Calculer</button>
+  <button class="reset-btn" onclick="reinitialiser()">Réinitialiser</button>
+</div>
+
+<script>
+function minutesEnHeuresMinutes(minutesTotales) {
+  if (!isFinite(minutesTotales) || minutesTotales < 0) minutesTotales = 0;
+  const totalMin = Math.round(minutesTotales);
+  const heures = Math.floor(totalMin / 60);
+  const minutes = totalMin % 60;
+  return heures + "h " + String(minutes).padStart(2, "0") + "min";
+}
+
+function calculer() {
+  const vitesse = parseFloat(document.getElementById("vitesse").value) || 0; // m/min
+  const longueur = parseFloat(document.getElementById("longueur").value) || 0; // mm
+  const totalLattes = parseFloat(document.getElementById("totalLattes").value) || 0;
+  const lattesFinies = parseFloat(document.getElementById("lattesFinies").value) || 0;
+
+  const errorBox = document.getElementById("errorMsg");
+
+  if (vitesse <= 0) {
+    errorBox.textContent = "Veuillez entrer une vitesse supérieure à 0.";
+    document.getElementById("tempsProdTotal").textContent = "--h --min";
+    document.getElementById("tempsRestant").textContent = "--h --min";
+    return;
+  } else {
+    errorBox.textContent = "";
+  }
+
+  // vitesse (m/min) -> mm/min : vitesse * 1000
+  const vitesseMmMin = vitesse * 1000;
+
+  // Temps de prod total (min) = (Nombre Total de lattes * Longueur) / (vitesse * 1000)
+  const tempsProdTotalMin = (totalLattes * longueur) / vitesseMmMin;
+
+  // Temps restant (min) = ((Nombre Total - Nombre finies) * Longueur) / (vitesse * 1000)
+  const lattesRestantes = totalLattes - lattesFinies;
+  const tempsRestantMin = (lattesRestantes * longueur) / vitesseMmMin;
+
+  document.getElementById("tempsProdTotal").textContent = minutesEnHeuresMinutes(tempsProdTotalMin);
+  document.getElementById("tempsRestant").textContent = minutesEnHeuresMinutes(tempsRestantMin);
+}
+
+function reinitialiser() {
+  document.getElementById("vitesse").value = "";
+  document.getElementById("longueur").value = "";
+  document.getElementById("totalLattes").value = "";
+  document.getElementById("lattesFinies").value = "";
+  document.getElementById("tempsProdTotal").textContent = "--h --min";
+  document.getElementById("tempsRestant").textContent = "--h --min";
+  document.getElementById("errorMsg").textContent = "";
+}
+
+// Recalcul automatique à chaque saisie
+["vitesse","longueur","totalLattes","lattesFinies"].forEach(id => {
+  document.getElementById(id).addEventListener("input", calculer);
+});
+</script>
+</body>
+</html>
