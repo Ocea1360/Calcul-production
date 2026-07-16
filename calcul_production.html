@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Calcul Temps de Production</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 20px 12px 40px 12px;
+    background: #e6e6e6;
+    font-family: Arial, Helvetica, sans-serif;
+    display: flex;
+    justify-content: center;
+  }
+  .container {
+    width: 100%;
+    max-width: 460px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 20px;
+    color: #1F3864;
+    margin-bottom: 22px;
+  }
+  .row {
+    display: flex;
+    align-items: stretch;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .label-box {
+    flex: 1.35;
+    background: #FCE9B0;
+    border: 2px solid #1F3864;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding: 12px 14px;
+    font-size: 15px;
+    color: #222;
+    font-weight: bold;
+  }
+  .value-box {
+    flex: 1;
+    background: #DCE6F3;
+    border: 2px solid #1F3864;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+  }
+  .value-box input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    color: #1F3864;
+    outline: none;
+  }
+  .value-box.readonly {
+    font-size: 15px;
+    font-weight: bold;
+    color: #1F3864;
+    text-align: center;
+  }
+  .unit {
+    font-size: 11px;
+    color: #555;
+    font-weight: normal;
+    margin-left: 4px;
+  }
+  button {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    margin-top: 10px;
+    background: #1F3864;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  button:active { background: #16294c; }
+  .reset-btn {
+    background: #8a8a8a;
+    margin-top: 8px;
+  }
+  .reset-btn:active { background: #6f6f6f; }
+  .info {
+    text-align: center;
+    font-size: 11px;
+    color: #777;
+    margin-top: 18px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Calcul Temps de Production</h1>
+
+  <div class="row">
+    <div class="label-box">Vitesse : <span class="unit">(m/min)</span></div>
+    <div class="value-box"><input type="number" id="vitesse" inputmode="decimal" placeholder="0"></div>
+  </div>
+
+  <div class="row">
+    <div class="label-box">Longueur : <span class="unit">(mm)</span></div>
+    <div class="value-box"><input type="number" id="longueur" inputmode="decimal" placeholder="0"></div>
+  </div>
+
+  <div class="row">
+    <div class="label-box">Nombre Total de plaque :</div>
+    <div class="value-box"><input type="number" id="totalPlaque" inputmode="numeric" placeholder="0"></div>
+  </div>
+
+  <div class="row">
+    <div class="label-box">Nombre de plaque finie :</div>
+    <div class="value-box"><input type="number" id="plaqueFinie" inputmode="numeric" placeholder="0"></div>
+  </div>
+
+  <div class="row">
+    <div class="label-box">Temps de prod total :</div>
+    <div class="value-box readonly" id="tempsTotal">--</div>
+  </div>
+
+  <div class="row">
+    <div class="label-box">Temps restant :</div>
+    <div class="value-box readonly" id="tempsRestant">--</div>
+  </div>
+
+  <button onclick="calculer()">Calculer</button>
+  <button class="reset-btn" onclick="reinitialiser()">Réinitialiser</button>
+
+  <div class="info">
+    Formules : Temps total = (Nb total × 3 × Longueur) / 1900<br>
+    Temps restant = ((Nb total − Nb finie) × 3 × Longueur) / 1900
+  </div>
+</div>
+
+<script>
+function minutesVersHeureMinute(minutesTotales) {
+  if (!isFinite(minutesTotales) || minutesTotales < 0) return "--";
+  const totalMinutesArrondi = Math.round(minutesTotales);
+  const heures = Math.floor(totalMinutesArrondi / 60);
+  const minutes = totalMinutesArrondi % 60;
+  return heures + " h " + (minutes < 10 ? "0" + minutes : minutes) + " min";
+}
+
+function calculer() {
+  const longueur = parseFloat(document.getElementById('longueur').value);
+  const totalPlaque = parseFloat(document.getElementById('totalPlaque').value);
+  const plaqueFinie = parseFloat(document.getElementById('plaqueFinie').value);
+
+  if (isNaN(longueur) || isNaN(totalPlaque)) {
+    document.getElementById('tempsTotal').textContent = "--";
+    document.getElementById('tempsRestant').textContent = "--";
+    return;
+  }
+
+  const finie = isNaN(plaqueFinie) ? 0 : plaqueFinie;
+
+  const tempsTotalMin = (totalPlaque * 3 * longueur) / 1900;
+  const tempsRestantMin = ((totalPlaque - finie) * 3 * longueur) / 1900;
+
+  document.getElementById('tempsTotal').textContent = minutesVersHeureMinute(tempsTotalMin);
+  document.getElementById('tempsRestant').textContent = minutesVersHeureMinute(tempsRestantMin);
+}
+
+function reinitialiser() {
+  ['vitesse','longueur','totalPlaque','plaqueFinie'].forEach(id => document.getElementById(id).value = "");
+  document.getElementById('tempsTotal').textContent = "--";
+  document.getElementById('tempsRestant').textContent = "--";
+}
+
+// Calcul automatique à chaque saisie
+['longueur','totalPlaque','plaqueFinie'].forEach(id => {
+  document.getElementById(id).addEventListener('input', calculer);
+});
+</script>
+</body>
+</html>
